@@ -1,6 +1,7 @@
 package com.example.dataflow.generic;
 
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Validation;
 
@@ -26,20 +27,14 @@ public interface GenericPipelineOptions extends DataflowPipelineOptions {
     void setDeadLetterTopic(String value);
 
     @Description("Path to parser registry yaml/json file")
-    @Validation.Required
+    @Default.String("classpath:parser-registry.default.yaml")
     String getParserRegistryPath();
     void setParserRegistryPath(String value);
 
-    @Description("Default message format key used to resolve parser, e.g. json, csv, xml")
-    @Validation.Required
+    @Description("Optional fallback message format key when payload format cannot be detected or detected parser fails, e.g. json, csv, xml")
+    @Default.String("json")
     String getDefaultMessageFormat();
     void setDefaultMessageFormat(String value);
-
-    @Description("Format detection mode: fixed or auto. fixed uses defaultMessageFormat for all messages. auto detects per-message format and falls back to defaultMessageFormat.")
-    default String getFormatDetectionMode() {
-        return "fixed";
-    }
-    void setFormatDetectionMode(String value);
 
     @Description("Optional Kafka security.protocol")
     String getKafkaSecurityProtocol();

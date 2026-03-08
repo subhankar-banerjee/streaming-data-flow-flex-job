@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
@@ -58,8 +61,7 @@ public class GenericKafkaToKafkaJsonPipeline {
         PCollectionTuple routed = input.apply("ParseToJson", ParDo.of(
             new ParseToJsonFn(
                 options.getParserRegistryPath(),
-                options.getDefaultMessageFormat(),
-                options.getFormatDetectionMode()))
+                options.getDefaultMessageFormat()))
                 .withOutputTags(SUCCESS_TAG, org.apache.beam.sdk.values.TupleTagList.of(DLQ_TAG)));
 
         routed.get(SUCCESS_TAG).apply("WriteOutputTopic",
@@ -98,14 +100,12 @@ public class GenericKafkaToKafkaJsonPipeline {
     private static class ParseToJsonFn extends DoFn<KV<byte[], byte[]>, KV<byte[], String>> {
         private final String parserRegistryPath;
         private final String defaultFormat;
-        private final String formatDetectionMode;
         private transient ParserRegistry parserRegistry;
         private transient ObjectMapper mapper;
 
-        private ParseToJsonFn(String parserRegistryPath, String defaultFormat, String formatDetectionMode) {
+        private ParseToJsonFn(String parserRegistryPath, String defaultFormat) {
             this.parserRegistryPath = parserRegistryPath;
             this.defaultFormat = defaultFormat;
-            this.formatDetectionMode = formatDetectionMode == null ? "fixed" : formatDetectionMode;
         }
 
         @Setup
@@ -120,41 +120,63 @@ public class GenericKafkaToKafkaJsonPipeline {
             byte[] payload = context.element().getValue();
 
             try {
-                String resolvedFormat = resolveFormat(payload);
-                JsonNode parsed;
-                try {
-                    parsed = parserRegistry.parse(resolvedFormat, payload);
-                } catch (Exception primaryEx) {
-                    // In auto mode, fallback to default format if detected parser fails.
-                    if ("auto".equalsIgnoreCase(formatDetectionMode)
-                            && defaultFormat != null
-                            && !defaultFormat.isBlank()
-                            && !defaultFormat.equalsIgnoreCase(resolvedFormat)) {
-                        parsed = parserRegistry.parse(defaultFormat, payload);
-                    } else {
-                        throw primaryEx;
+                JsonNode parsed = null;
+                Exception lastError = null;
+
+                for (String candidate : resolveCandidates(payload)) {
+                    if (!parserRegistry.hasParser(candidate)) {
+                        continue;
+                    }
+                    try {
+                        parsed = parserRegistry.parse(candidate, payload);
+                        break;
+                    } catch (Exception ex) {
+                        lastError = ex;
                     }
                 }
+
+                if (parsed == null) {
+                    if (lastError != null) {
+                        throw lastError;
+                    }
+                    throw new IllegalArgumentException("No configured parser could handle the payload");
+                }
+
                 String output = mapper.writeValueAsString(parsed);
                 context.output(SUCCESS_TAG, KV.of(key, output));
             } catch (Exception ex) {
-                LOG.error("Failed to parse message with default format {} and detection mode {}", defaultFormat, formatDetectionMode, ex);
+                LOG.error("Failed to parse message with default fallback format {}", defaultFormat, ex);
                 String failedPayload = payload == null ? "" : new String(payload, StandardCharsets.UTF_8);
                 String errorJson = String.format(
-                        "{\"error\":\"%s\",\"defaultFormat\":\"%s\",\"detectionMode\":\"%s\",\"payload\":%s}",
+                        "{\"error\":\"%s\",\"defaultFormat\":\"%s\",\"payload\":%s}",
                         sanitize(ex.getMessage()),
                         sanitize(defaultFormat),
-                        sanitize(formatDetectionMode),
                         mapperValue(failedPayload));
                 context.output(DLQ_TAG, KV.of(key, errorJson));
             }
         }
 
-        private String resolveFormat(byte[] payload) {
-            if (!"auto".equalsIgnoreCase(formatDetectionMode)) {
-                return defaultFormat;
+        private List<String> resolveCandidates(byte[] payload) {
+            Set<String> candidates = new LinkedHashSet<>();
+            String detected = resolveFormat(payload);
+
+            if ("binary".equals(detected)) {
+                // Confluent wire format uses binary framing for Avro/Protobuf.
+                candidates.add("avro");
+                candidates.add("protobuf");
+            } else {
+                candidates.add(detected);
             }
 
+            if (defaultFormat != null && !defaultFormat.isBlank()) {
+                candidates.add(defaultFormat.trim().toLowerCase());
+            }
+
+            candidates.addAll(parserRegistry.getConfiguredFormats());
+            return List.copyOf(candidates);
+        }
+
+        private String resolveFormat(byte[] payload) {
             if (payload == null || payload.length == 0) {
                 return defaultFormat;
             }
@@ -173,6 +195,11 @@ public class GenericKafkaToKafkaJsonPipeline {
             }
             if (value.contains(",")) {
                 return "csv";
+            }
+
+            // Confluent serializers typically use magic-byte framing for binary payloads.
+            if (payload.length > 5 && payload[0] == 0x0) {
+                return "binary";
             }
             return "raw";
         }

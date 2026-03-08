@@ -23,19 +23,13 @@
     {
       "name": "parserRegistryPath",
       "label": "Parser registry file path",
-      "helpText": "Local path or gs:// path to registry yaml/json",
-      "isOptional": false
+      "helpText": "Optional local path, classpath: path, or gs:// path to registry yaml/json. Defaults to classpath:parser-registry.default.yaml",
+      "isOptional": true
     },
     {
       "name": "defaultMessageFormat",
-      "label": "Default input format",
-      "helpText": "Format key to resolve parser at runtime (for example: json, csv, xml)",
-      "isOptional": false
-    },
-    {
-      "name": "formatDetectionMode",
-      "label": "Format detection mode",
-      "helpText": "Optional: fixed or auto. fixed uses defaultMessageFormat for all messages. auto detects per-message format and falls back to defaultMessageFormat",
+      "label": "Fallback message format",
+      "helpText": "Optional fallback parser key (for example: json, csv, xml). Defaults to json if omitted",
       "isOptional": true
     },
     {
