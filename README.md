@@ -55,8 +55,8 @@ Use an already published image URI in GAR.
 
 ```powershell
 ./scripts/register-flex-template.ps1 `
-  -ImageUri "europe-west1-docker.pkg.dev/<PROJECT_ID>/<GAR_REPO>/generic-kafka-json-template:v3" `
-  -TemplateSpecGcsPath "gs://<BUCKET>/templates/generic-kafka-json-template-v3.json"
+  -ImageUri "europe-west1-docker.pkg.dev/<PROJECT_ID>/<GAR_REPO>/generic-kafka-json-template:v4" `
+  -TemplateSpecGcsPath "gs://<BUCKET>/templates/generic-kafka-json-template-v4.json"
 ```
 
 ## Run Dataflow Flex Template job
@@ -65,7 +65,7 @@ Use an already published image URI in GAR.
 ./scripts/run-flex-template.ps1 `
   -ProjectId "<PROJECT_ID>" `
   -Region "europe-west1" `
-  -TemplateSpecGcsPath "gs://<BUCKET>/templates/generic-kafka-json-template-v3.json" `
+  -TemplateSpecGcsPath "gs://<BUCKET>/templates/generic-kafka-json-template-v4.json" `
   -JobName "kafka-json-router-$(Get-Date -Format 'yyyyMMdd-HHmmss')" `
   -BootstrapServers "pkc-xxxxx.europe-west1.gcp.confluent.cloud:9092" `
   -InputTopic "teamA-input" `
