@@ -1,0 +1,67 @@
+{
+    "defaultEnvironment": {},
+    "image": "europe-west1-docker.pkg.dev/kafka-gcp-pubsub-bigquery/dataflow-templates/generic-kafka-json-template:v4",
+    "metadata": {
+        "description": "Reusable config-driven pipeline: Confluent Kafka input -> parser registry -> JSON output Kafka topic",
+        "name": "generic-kafka-json-flex-template",
+        "parameters": [
+            {
+                "helpText": "Comma-separated bootstrap servers, e.g. broker1:9092,broker2:9092",
+                "isOptional": false,
+                "label": "Kafka bootstrap servers",
+                "name": "bootstrapServers"
+            },
+            {
+                "helpText": "Source topic to read raw messages from",
+                "isOptional": false,
+                "label": "Input Kafka topic",
+                "name": "inputTopic"
+            },
+            {
+                "helpText": "Target topic to publish normalized JSON",
+                "isOptional": false,
+                "label": "Output Kafka topic",
+                "name": "outputTopic"
+            },
+            {
+                "helpText": "Optional local path, classpath: path, or gs:// path to registry yaml/json. Defaults to classpath:parser-registry.default.yaml",
+                "isOptional": true,
+                "label": "Parser registry file path",
+                "name": "parserRegistryPath"
+            },
+            {
+                "helpText": "Optional fallback parser key (for example: json, csv, xml). Defaults to json if omitted",
+                "isOptional": true,
+                "label": "Fallback message format",
+                "name": "defaultMessageFormat"
+            },
+            {
+                "helpText": "Optional Kafka topic for parse failures",
+                "isOptional": true,
+                "label": "Dead letter topic",
+                "name": "deadLetterTopic"
+            },
+            {
+                "helpText": "Optional: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL",
+                "isOptional": true,
+                "label": "Security protocol",
+                "name": "kafkaSecurityProtocol"
+            },
+            {
+                "helpText": "Optional: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512",
+                "isOptional": true,
+                "label": "SASL mechanism",
+                "name": "kafkaSaslMechanism"
+            },
+            {
+                "helpText": "Optional JAAS config string",
+                "isOptional": true,
+                "label": "SASL JAAS config",
+                "name": "kafkaSaslJaasConfig"
+            }
+        ]
+    },
+    "sdkInfo": {
+        "language": "JAVA"
+    }
+}

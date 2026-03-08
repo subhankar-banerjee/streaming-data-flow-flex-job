@@ -8,11 +8,12 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.channels.Channels;
-import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.ResourceId;
 import org.yaml.snakeyaml.Yaml;
@@ -62,9 +63,20 @@ public class ParserRegistry {
         return parser.parse(payload);
     }
 
+    public boolean hasParser(String format) {
+        if (format == null || format.isBlank()) {
+            return false;
+        }
+        return parserByFormat.containsKey(format.toLowerCase(Locale.ROOT).trim());
+    }
+
+    public Set<String> getConfiguredFormats() {
+        return new LinkedHashSet<>(parserByFormat.keySet());
+    }
+
     @SuppressWarnings("unchecked")
     private static ParserRegistryConfig readConfig(String configPath) throws Exception {
-        String extension = Path.of(configPath).getFileName().toString().toLowerCase(Locale.ROOT);
+        String extension = extractConfigName(configPath).toLowerCase(Locale.ROOT);
         try (InputStream stream = openConfigStream(configPath)) {
             if (extension.endsWith(".yaml") || extension.endsWith(".yml")) {
                 Yaml yaml = new Yaml();
@@ -78,10 +90,34 @@ public class ParserRegistry {
     }
 
     private static InputStream openConfigStream(String configPath) throws Exception {
+        if (configPath.startsWith("classpath:")) {
+            String resourcePath = configPath.substring("classpath:".length());
+            while (resourcePath.startsWith("/")) {
+                resourcePath = resourcePath.substring(1);
+            }
+            InputStream stream = ParserRegistry.class.getClassLoader().getResourceAsStream(resourcePath);
+            if (stream == null) {
+                throw new IllegalArgumentException("Classpath parser registry resource not found: " + configPath);
+            }
+            return stream;
+        }
         if (configPath.startsWith("gs://")) {
             ResourceId resourceId = FileSystems.matchNewResource(configPath, false);
             return Channels.newInputStream(FileSystems.open(resourceId));
         }
         return new FileInputStream(configPath);
+    }
+
+    private static String extractConfigName(String configPath) {
+        if (configPath == null || configPath.isBlank()) {
+            return "";
+        }
+        String normalized = configPath.replace('\\', '/');
+        int slash = normalized.lastIndexOf('/');
+        int colon = normalized.lastIndexOf(':');
+        int index = Math.max(slash, colon);
+        return index >= 0 && index < normalized.length() - 1
+                ? normalized.substring(index + 1)
+                : normalized;
     }
 }

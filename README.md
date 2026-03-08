@@ -11,23 +11,26 @@ This project provides a **single reusable Java pipeline** for multiple teams.
   - External parser registry config file
   - Pluggable parser classes (`MessageParser` interface)
 
+`ParserRegistryPath` is optional. If omitted, the template uses built-in `classpath:parser-registry.default.yaml`.
+
 ## Architecture
 
 1. Read raw bytes from Confluent Kafka input topic.
-2. Resolve parser from registry using `defaultMessageFormat` runtime parameter.
+2. Detect message format per record (`json`, `xml`, `csv`, otherwise `raw`).
 3. Convert message to canonical JSON string.
 4. Publish JSON to output topic.
 5. Publish parse failures to optional dead-letter topic.
 
-For mixed message types in one topic, set `formatDetectionMode=auto`.
-The pipeline then detects `json`, `xml`, or `csv` per message and falls back to `defaultMessageFormat`.
+Mixed message types in one topic are handled by default.
+Supported parser formats include `json`, `xml`, `csv`, `avro`, `protobuf`, and `raw` when configured in parser registry.
+`defaultMessageFormat` is optional and used only as a fallback when detection is ambiguous or the detected parser fails. If omitted, it defaults to `json`.
 
 ## Project structure
 
 - `src/main/java/.../GenericKafkaToKafkaJsonPipeline.java` - pipeline entry point
 - `src/main/java/.../GenericPipelineOptions.java` - runtime parameters
 - `src/main/java/.../parser/*` - parser registry and parser interface
-- `src/main/java/.../parser/impl/*` - example parser plugins (json, csv, xml, raw)
+- `src/main/java/.../parser/impl/*` - example parser plugins (json, csv, xml, avro, protobuf, raw)
 - `config/parser-registry.example.yaml` - sample parser registry
 - `flex/metadata.json` - Flex Template metadata (parameter UI/validation)
 - `scripts/register-flex-template.ps1` - register/update Flex Template spec using an existing image URI
@@ -67,9 +70,6 @@ Use an already published image URI in GAR.
   -BootstrapServers "pkc-xxxxx.europe-west1.gcp.confluent.cloud:9092" `
   -InputTopic "teamA-input" `
   -OutputTopic "teamA-output-json" `
-  -ParserRegistryPath "gs://<BUCKET>/config/parser-registry.yaml" `
-  -DefaultMessageFormat "json" `
-  -FormatDetectionMode "auto" `
   -DeadLetterTopic "teamA-dlq" `
   -KafkaSecurityProtocol "SASL_SSL" `
   -KafkaSaslMechanism "PLAIN" `
@@ -79,9 +79,7 @@ Use an already published image URI in GAR.
   -ServiceAccountEmail "<DATAFLOW_WORKER_SERVICE_ACCOUNT_EMAIL>"
 ```
 
-`FormatDetectionMode` values:
-- `fixed`: Uses `DefaultMessageFormat` for all messages.
-- `auto`: Detects `json`, `xml`, `csv` per message and falls back to `DefaultMessageFormat`.
+`DefaultMessageFormat` is an optional fallback parser key (default: `json`).
 
 ## Parser registry model
 
@@ -104,6 +102,13 @@ To support a new format:
 2. Include class in build artifact.
 3. Add a new parser entry in registry config.
 4. Run pipeline with `defaultMessageFormat=<new-format>`.
+
+For Avro and Protobuf:
+1. Add `avro` and `protobuf` entries in parser registry.
+2. Set `schemaRegistryUrl` and Schema Registry auth fields in parser config.
+3. Set parser `topic` to the source Kafka topic for correct deserialization context.
+
+Use `ParserRegistryPath` only when you want custom parser mappings, for example `gs://<BUCKET>/config/parser-registry.yaml`.
 
 ## Important operational note
 
