@@ -1,0 +1,84 @@
+# -----------------------------
+# Core project and region
+# -----------------------------
+project_id   = "kafka-gcp-pubsub-bigquery"
+region       = "europe-west1"
+environment  = "dev"
+
+# -----------------------------
+# Storage buckets
+# -----------------------------
+# Bucket storing Flex template specs (container spec JSON)
+template_bucket_name = "kafka-data-flow-flex"
+
+# Bucket for Dataflow staging/temp files
+staging_bucket_name  = "kafka-data-flow-staging"
+
+force_destroy_bucket = false
+
+# -----------------------------
+# KMS / CMEK
+# -----------------------------
+enable_cmek         = true
+kms_key_ring_name   = "dataflow-keyring"
+kms_crypto_key_name = "dataflow-key"
+kms_rotation_period = "7776000s"
+
+# -----------------------------
+# Flex template + Dataflow job
+# -----------------------------
+dataflow_job_name        = "kafka-json-router-dev"
+
+template_spec_gcs_path   = ""
+template_spec_object     = "templates/generic-kafka-json-template-v4.json"
+
+dataflow_staging_prefix  = "dataflow/staging"
+dataflow_temp_prefix     = "dataflow/temp"
+
+bootstrap_servers        = "pkc-xxxxx.europe-west1.gcp.confluent.cloud:9092"
+input_topic              = "streaming-odp"
+output_topic             = "streaming-fdp"
+dead_letter_topic        = "streaming-odp-DLQ"
+
+kafka_security_protocol  = "SASL_SSL"
+kafka_sasl_mechanism     = "PLAIN"
+
+# Keep secret in secure variable store in workplace.
+kafka_sasl_jaas_config   = "org.apache.kafka.common.security.plain.PlainLoginModule required username='REPLACE_ME' password='REPLACE_ME';"
+
+# Optional: leave empty to use template defaults.
+parser_registry_path     = ""
+default_message_format   = ""
+
+# Optional custom template params
+extra_parameters = {}
+
+# -----------------------------
+# Harness OIDC Workload Identity
+# -----------------------------
+enable_workload_identity  = true
+wif_pool_id               = "harness-pool"
+wif_provider_id           = "harness-oidc"
+
+# Replace with your Harness account issuer URI
+harness_oidc_issuer_uri   = "https://app.harness.io/ng/api/oidc/account/REPLACE_ACCOUNT_ID"
+
+# Add expected token audiences from Harness config
+harness_allowed_audiences = []
+
+# Optional token restriction (CEL). Keep empty if not needed.
+# Example:
+# harness_attribute_condition = "assertion.aud == 'your-audience'"
+harness_attribute_condition = ""
+
+terraform_runner_sa_id = "harness-terraform-runner"
+
+terraform_runner_sa_roles = [
+  "roles/dataflow.admin",
+  "roles/dataflow.worker",
+  "roles/storage.admin",
+  "roles/artifactregistry.reader",
+  "roles/artifactregistry.writer",
+  "roles/iam.serviceAccountUser",
+  "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+]
