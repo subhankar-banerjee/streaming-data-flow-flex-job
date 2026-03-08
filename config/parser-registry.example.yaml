@@ -1,0 +1,19 @@
+parsers:
+  - format: json
+    className: com.example.dataflow.generic.parser.impl.JsonMessageParser
+    config: {}
+  - format: csv
+    className: com.example.dataflow.generic.parser.impl.CsvMessageParser
+    config:
+      delimiter: ","
+      hasHeader: false
+      columns:
+        - id
+        - name
+        - amount
+  - format: xml
+    className: com.example.dataflow.generic.parser.impl.XmlMessageParser
+    config: {}
+  - format: raw
+    className: com.example.dataflow.generic.parser.impl.RawStringMessageParser
+    config: {}
