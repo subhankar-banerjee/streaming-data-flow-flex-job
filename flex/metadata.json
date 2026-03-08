@@ -1,0 +1,66 @@
+{
+  "name": "generic-kafka-json-flex-template",
+  "description": "Reusable config-driven pipeline: Confluent Kafka input -> parser registry -> JSON output Kafka topic",
+  "parameters": [
+    {
+      "name": "bootstrapServers",
+      "label": "Kafka bootstrap servers",
+      "helpText": "Comma-separated bootstrap servers, e.g. broker1:9092,broker2:9092",
+      "isOptional": false
+    },
+    {
+      "name": "inputTopic",
+      "label": "Input Kafka topic",
+      "helpText": "Source topic to read raw messages from",
+      "isOptional": false
+    },
+    {
+      "name": "outputTopic",
+      "label": "Output Kafka topic",
+      "helpText": "Target topic to publish normalized JSON",
+      "isOptional": false
+    },
+    {
+      "name": "parserRegistryPath",
+      "label": "Parser registry file path",
+      "helpText": "Local path or gs:// path to registry yaml/json",
+      "isOptional": false
+    },
+    {
+      "name": "defaultMessageFormat",
+      "label": "Default input format",
+      "helpText": "Format key to resolve parser at runtime (for example: json, csv, xml)",
+      "isOptional": false
+    },
+    {
+      "name": "formatDetectionMode",
+      "label": "Format detection mode",
+      "helpText": "Optional: fixed or auto. fixed uses defaultMessageFormat for all messages. auto detects per-message format and falls back to defaultMessageFormat",
+      "isOptional": true
+    },
+    {
+      "name": "deadLetterTopic",
+      "label": "Dead letter topic",
+      "helpText": "Optional Kafka topic for parse failures",
+      "isOptional": true
+    },
+    {
+      "name": "kafkaSecurityProtocol",
+      "label": "Security protocol",
+      "helpText": "Optional: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL",
+      "isOptional": true
+    },
+    {
+      "name": "kafkaSaslMechanism",
+      "label": "SASL mechanism",
+      "helpText": "Optional: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512",
+      "isOptional": true
+    },
+    {
+      "name": "kafkaSaslJaasConfig",
+      "label": "SASL JAAS config",
+      "helpText": "Optional JAAS config string",
+      "isOptional": true
+    }
+  ]
+}
