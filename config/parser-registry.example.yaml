@@ -14,20 +14,6 @@ parsers:
   - format: xml
     className: com.example.dataflow.generic.parser.impl.XmlMessageParser
     config: {}
-  - format: avro
-    className: com.example.dataflow.generic.parser.impl.AvroMessageParser
-    config:
-      topic: "teamA-input"
-      schemaRegistryUrl: "https://<confluent-schema-registry-endpoint>"
-      basicAuthCredentialsSource: "USER_INFO"
-      schemaRegistryBasicAuthUserInfo: "<sr-api-key>:<sr-api-secret>"
-  - format: protobuf
-    className: com.example.dataflow.generic.parser.impl.ProtobufMessageParser
-    config:
-      topic: "teamA-input"
-      schemaRegistryUrl: "https://<confluent-schema-registry-endpoint>"
-      basicAuthCredentialsSource: "USER_INFO"
-      schemaRegistryBasicAuthUserInfo: "<sr-api-key>:<sr-api-secret>"
   - format: raw
     className: com.example.dataflow.generic.parser.impl.RawStringMessageParser
     config: {}
