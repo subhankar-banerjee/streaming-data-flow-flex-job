@@ -158,15 +158,7 @@ public class GenericKafkaToKafkaJsonPipeline {
 
         private List<String> resolveCandidates(byte[] payload) {
             Set<String> candidates = new LinkedHashSet<>();
-            String detected = resolveFormat(payload);
-
-            if ("binary".equals(detected)) {
-                // Confluent wire format uses binary framing for Avro/Protobuf.
-                candidates.add("avro");
-                candidates.add("protobuf");
-            } else {
-                candidates.add(detected);
-            }
+            candidates.add(resolveFormat(payload));
 
             if (defaultFormat != null && !defaultFormat.isBlank()) {
                 candidates.add(defaultFormat.trim().toLowerCase());
@@ -197,10 +189,6 @@ public class GenericKafkaToKafkaJsonPipeline {
                 return "csv";
             }
 
-            // Confluent serializers typically use magic-byte framing for binary payloads.
-            if (payload.length > 5 && payload[0] == 0x0) {
-                return "binary";
-            }
             return "raw";
         }
 
